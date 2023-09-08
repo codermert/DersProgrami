@@ -1,4 +1,3 @@
-const fs = require("fs");
 const XLSX = require("xlsx");
 
 const teachers = [
@@ -69,6 +68,7 @@ const classes = [
 ];
 
 
+// Haftanın günlerini ve saatlerini tanımlayalım
 const daysOfWeek = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"];
 const hoursOfDay = ["1. Ders", "2. Ders", "3. Ders", "4. Ders", "5. Ders", "6. Ders", "7. Ders"];
 
@@ -104,11 +104,17 @@ function createSchedule() {
         let randomTeacher;
         do {
           randomTeacher = teachers[Math.floor(Math.random() * teachers.length)];
-        } while (teacherHours[randomTeacher.name] >= 35 || randomTeacher.subject !== classInfo.subject);
+        } while (
+          teacherHours[randomTeacher.name] >= 35 ||
+          (randomTeacher.subject !== classInfo.subject &&
+            (hour === "Felsefe" || hour === "Din")) ||
+          (hour !== "1. Ders" && weeklySchedule[className][day]["1. Ders"] &&
+            weeklySchedule[className][day]["1. Ders"].teacher === randomTeacher.name)
+        );
 
         weeklySchedule[className][day][hour] = {
           teacher: randomTeacher.name,
-          subject: classInfo.subject,
+          subject: randomTeacher.subject,
         };
 
         if (!teacherHours[randomTeacher.name]) {
@@ -122,6 +128,7 @@ function createSchedule() {
 
 createSchedule();
 
+// Verileri bir Excel dosyasına kaydetme
 const workbook = XLSX.utils.book_new();
 
 for (const className in weeklySchedule) {
@@ -144,13 +151,5 @@ for (const className in weeklySchedule) {
   XLSX.utils.book_append_sheet(workbook, worksheet, className);
 }
 
-const writeStream = fs.createWriteStream("ders_programi.xlsx");
-XLSX.write(workbook, { bookType: "xlsx", type: "buffer" }, (err, data) => {
-  if (err) {
-    console.error("Excel dosyası oluşturulurken bir hata oluştu:", err);
-  } else {
-    writeStream.write(data);
-    writeStream.end();
-    console.log("Ders programı Excel dosyası oluşturuldu: ders_programi.xlsx");
-  }
-});
+XLSX.writeFile(workbook, "ders_programi.xlsx", { bookType: "xlsx" });
+console.log("Ders programı Excel dosyası oluşturuldu: ders_programi.xlsx");
